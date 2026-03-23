@@ -1,0 +1,136 @@
+<UserControl x:Class="winAlert.Controls.AlertCard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:converters="clr-namespace:winAlert.Converters">
+
+    <UserControl.Resources>
+        <converters:SeverityToColorConverter x:Key="SeverityToColorConverter"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:TimeAgoConverter x:Key="TimeAgoConverter"/>
+    </UserControl.Resources>
+
+    <Border x:Name="CardBorder"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="0"
+            Margin="0,0,0,8"
+            Cursor="Hand">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="8" ShadowDepth="2" Opacity="0.2"/>
+        </Border.Effect>
+
+        <Grid>
+            <!-- Severity color bar - left edge -->
+            <Rectangle x:Name="SeverityBar"
+                       Width="4"
+                       HorizontalAlignment="Left"
+                       Fill="{Binding Severity, Converter={StaticResource SeverityToColorConverter}}"
+                       RadiusX="2" RadiusY="2"/>
+
+            <!-- Main content -->
+            <Grid Margin="16,12,12,12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Header: Severity badge and timestamp -->
+                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+                    <Border Background="{Binding Severity, Converter={StaticResource SeverityToColorConverter}}"
+                            CornerRadius="4"
+                            Padding="8,2"
+                            Margin="0,0,8,0">
+                        <TextBlock Text="{Binding SeverityDisplayName}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"/>
+                    </Border>
+                    <TextBlock Text="{Binding Source, StringFormat='From: {0}'}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               FontSize="12"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Acknowledge button (visible when NOT acknowledged) -->
+                <Button x:Name="AcknowledgeButton"
+                        Grid.Row="0" Grid.Column="1"
+                        Style="{StaticResource MaterialDesignFlatButton}"
+                        Content="ACK"
+                        FontSize="11"
+                        Padding="12,4"
+                        materialDesign:ButtonAssist.CornerRadius="4"
+                        Visibility="{Binding IsAcknowledged, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}"
+                        Command="{Binding DataContext.AcknowledgeAlertCommand, RelativeSource={RelativeSource AncestorType=ItemsControl, AncestorLevel=2}}"
+                        CommandParameter="{Binding Id}"/>
+
+                <!-- Acknowledged label (visible when acknowledged) -->
+                <TextBlock Grid.Row="0" Grid.Column="1"
+                           Text="ACKNOWLEDGED"
+                           Foreground="{DynamicResource SuccessBrush}"
+                           FontSize="11"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           Visibility="{Binding IsAcknowledged, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                <!-- Title -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                           Text="{Binding Title}"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           FontSize="15"
+                           FontWeight="Bold"
+                           Margin="0,8,0,4"
+                           TextWrapping="Wrap"/>
+
+                <!-- Message preview -->
+                <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                           Text="{Binding TruncatedMessage}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           FontSize="13"
+                           TextWrapping="Wrap"
+                           MaxHeight="60"
+                           TextTrimming="CharacterEllipsis"/>
+            </Grid>
+
+            <!-- Pulse overlay for unacknowledged alerts -->
+            <Border x:Name="PulseOverlay"
+                    CornerRadius="8"
+                    BorderThickness="2"
+                    BorderBrush="{Binding Severity, Converter={StaticResource SeverityToColorConverter}}"
+                    IsHitTestVisible="False"
+                    Opacity="0">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Style.Triggers>
+                            <!-- Pulse when NOT acknowledged -->
+                            <DataTrigger Binding="{Binding IsAcknowledged}" Value="False">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard x:Name="PulseStoryboard">
+                                        <Storyboard RepeatBehavior="Forever">
+                                            <!-- Fade in quickly -->
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                           From="0" To="0.8"
+                                                           Duration="0:0:0.3"
+                                                           AutoReverse="True"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <StopStoryboard BeginStoryboardName="PulseStoryboard"/>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+            </Border>
+        </Grid>
+    </Border>
+
+</UserControl>

@@ -1,0 +1,153 @@
+<Window x:Class="winAlert.Views.AlertDetailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:converters="clr-namespace:winAlert.Converters"
+        Title="Alert Details"
+        Height="500"
+        Width="600"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource BackgroundBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="{DynamicResource MaterialDesignFont}"
+        TextElement.Foreground="{DynamicResource TextPrimaryBrush}">
+
+    <Window.Resources>
+        <converters:SeverityToColorConverter x:Key="SeverityToColorConverter"/>
+        <converters:SeverityToDisplayNameConverter x:Key="SeverityToDisplayNameConverter"/>
+        <converters:TimeAgoConverter x:Key="TimeAgoConverter"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </Window.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                <Border Background="{Binding Alert.Severity, Converter={StaticResource SeverityToColorConverter}}"
+                        CornerRadius="4"
+                        Padding="12,6"
+                        Margin="0,0,12,0">
+                    <TextBlock Text="{Binding Alert.SeverityDisplayName}"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="White"/>
+                </Border>
+                <TextBlock Text="{Binding Alert.Source, StringFormat='From: {0}'}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           FontSize="12"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <TextBlock Text="{Binding Alert.Title}"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- Content -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="16">
+            <ScrollViewer Style="{StaticResource MaterialDesignScrollViewer}"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- Timestamp -->
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                   Text="Received:"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,0,16,4"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1"
+                                   Text="{Binding Alert.ReceivedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss} UTC'}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   FontSize="13"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                   Text="Source Time:"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,0,16,4"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1"
+                                   Text="{Binding Alert.Timestamp, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss} UTC'}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   FontSize="13"/>
+                    </Grid>
+
+                    <!-- Message -->
+                    <TextBlock Text="Message"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               FontSize="12"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="{Binding Alert.Message}"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               FontSize="14"
+                               TextWrapping="Wrap"/>
+
+                    <!-- Metadata (if any) -->
+                    <ItemsControl ItemsSource="{Binding Alert.Metadata}"
+                                  Margin="0,20,0,0"
+                                  Visibility="{Binding HasMetadata, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Key}"
+                                               Foreground="{DynamicResource TextTertiaryBrush}"
+                                               FontSize="12"
+                                               Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding Value}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               FontSize="13"
+                                               TextWrapping="Wrap"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Footer -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,20,0,0">
+            <Button Content="Close"
+                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                    Click="CloseButton_Click"
+                    Margin="0,0,8,0"
+                    Padding="20,8"/>
+            <Button Content="Acknowledge"
+                    Style="{StaticResource MaterialDesignRaisedButton}"
+                    Click="AcknowledgeButton_Click"
+                    Visibility="{Binding CanAcknowledge, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Padding="24,8"/>
+        </StackPanel>
+    </Grid>
+
+</Window>

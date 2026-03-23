@@ -1,0 +1,345 @@
+<Window x:Class="winAlert.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:controls="clr-namespace:winAlert.Controls"
+        xmlns:converters="clr-namespace:winAlert.Converters"
+        Title="winAlert - Enterprise Alert Monitor"
+        Height="800"
+        Width="1200"
+        MinHeight="600"
+        MinWidth="900"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BackgroundBrush}"
+        TextElement.Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="{DynamicResource MaterialDesignFont}">
+
+    <Window.Resources>
+        <converters:SeverityToColorConverter x:Key="SeverityToColorConverter"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        <converters:ConnectionStatusToColorConverter x:Key="ConnectionStatusToColorConverter"/>
+        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Critical Alert Overlay -->
+        <Border x:Name="AlertOverlay"
+                Grid.Row="0" Grid.RowSpan="3"
+                Background="#E0000000"
+                Visibility="{Binding ShowOverlay, Converter={StaticResource BoolToVisibilityConverter}}"
+                Panel.ZIndex="100">
+            <Grid>
+                <Border Background="{DynamicResource ErrorBrush}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Padding="40,32"
+                        CornerRadius="12"
+                        MaxWidth="500"
+                        Margin="24">
+                    <Border.Effect>
+                        <DropShadowEffect Color="Black" BlurRadius="30" ShadowDepth="8" Opacity="0.6"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <materialDesign:PackIcon Kind="AlertCircle" 
+                                                 Width="56" Height="56" 
+                                                 HorizontalAlignment="Center"
+                                                 Foreground="White"
+                                                 Margin="0,0,0,20"/>
+                        <TextBlock Text="CRITICAL ALERT"
+                                   FontSize="26"
+                                   FontWeight="Bold"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,0,0,12"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"/>
+                        <TextBlock Text="Immediate attention required"
+                                   FontSize="15"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   Opacity="0.9"
+                                   Margin="0,0,0,28"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"/>
+                        <Button Content="ACKNOWLEDGE ALL"
+                                HorizontalAlignment="Center"
+                                Padding="28,14"
+                                MinWidth="180"
+                                MinHeight="48"
+                                FontSize="15"
+                                FontWeight="SemiBold"
+                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                Background="White"
+                                Foreground="{DynamicResource ErrorBrush}"
+                                Command="{Binding AcknowledgeAllCommand}"
+                                materialDesign:ButtonAssist.CornerRadius="6"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Header -->
+        <Border Grid.Row="0" 
+                Padding="16,12" 
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Status Section -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <controls:StatusIndicator Width="24" Height="24" IsListening="{Binding IsListening}"/>
+                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding StatusText}" 
+                                   FontSize="14" 
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{Binding ConnectionCount, StringFormat='{}{0} connections'}" 
+                                   FontSize="12" 
+                                   Foreground="{DynamicResource TextTertiaryBrush}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Port Control Section -->
+                <StackPanel Grid.Column="1" 
+                            Orientation="Horizontal" 
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="Port:" 
+                               VerticalAlignment="Center" 
+                               Margin="0,0,8,0"
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" 
+                             Width="80" 
+                             Padding="8,4"
+                             VerticalContentAlignment="Center"
+                             Style="{StaticResource MaterialDesignTextBox}"
+                             Background="{DynamicResource SurfaceVariantBrush}"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             BorderBrush="{DynamicResource BorderBrush}"
+                             IsEnabled="{Binding IsListening, Converter={StaticResource InverseBoolConverter}}"/>
+                    <Button Content="Start" 
+                            Command="{Binding StartListeningCommand}" 
+                            Margin="12,0,0,0" 
+                            Padding="16,6"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Visibility="{Binding IsListening, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}"/>
+                    <Button Content="Stop" 
+                            Command="{Binding StopListeningCommand}" 
+                            Margin="12,0,0,0" 
+                            Padding="16,6"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Background="{DynamicResource ErrorBrush}"
+                            Visibility="{Binding IsListening, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                </StackPanel>
+
+                <!-- Settings Button -->
+                <Button Grid.Column="2" 
+                        Style="{StaticResource MaterialDesignIconButton}"
+                        ToolTip="Settings"
+                        Command="{Binding OpenSettingsCommand}">
+                    <materialDesign:PackIcon Kind="Cog" Width="24" Height="24"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" MinWidth="300"/>
+                <ColumnDefinition Width="*" MinWidth="300"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Active Alerts Panel -->
+            <Border Grid.Column="0" 
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="16"
+                    Margin="0,0,8,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Header -->
+                    <TextBlock Grid.Row="0" 
+                               Text="Active Alerts" 
+                               FontSize="18" 
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               Margin="0,0,0,12"/>
+                    
+                    <!-- Severity Counters -->
+                    <WrapPanel Grid.Row="1" 
+                               Orientation="Horizontal"
+                               Margin="0,0,0,12">
+                        <Border Background="#FF5252" 
+                                CornerRadius="4" 
+                                Padding="10,4" 
+                                Margin="0,0,8,4">
+                            <TextBlock Text="{Binding CriticalCount, StringFormat='Critical: {0}'}" 
+                                       FontSize="12" 
+                                       Foreground="White"
+                                       FontWeight="SemiBold"/>
+                        </Border>
+                        <Border Background="#FF9800" 
+                                CornerRadius="4" 
+                                Padding="10,4" 
+                                Margin="0,0,8,4">
+                            <TextBlock Text="{Binding HighCount, StringFormat='High: {0}'}" 
+                                       FontSize="12" 
+                                       Foreground="White"
+                                       FontWeight="SemiBold"/>
+                        </Border>
+                        <Border Background="#FFC107" 
+                                CornerRadius="4" 
+                                Padding="10,4"
+                                Margin="0,0,8,4">
+                            <TextBlock Text="{Binding MediumCount, StringFormat='Medium: {0}'}" 
+                                       FontSize="12" 
+                                       Foreground="#212121"
+                                       FontWeight="SemiBold"/>
+                        </Border>
+                    </WrapPanel>
+                    
+                    <!-- Alerts List -->
+                    <ScrollViewer Grid.Row="2" 
+                                  Style="{StaticResource MaterialDesignScrollViewer}"
+                                  VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding ActiveAlerts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <controls:AlertCard/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    
+                    <!-- Empty State -->
+                    <TextBlock Grid.Row="2" 
+                               Text="No active alerts" 
+                               Foreground="{DynamicResource TextTertiaryBrush}" 
+                               HorizontalAlignment="Center" 
+                               VerticalAlignment="Center"
+                               FontSize="14"
+                               Visibility="{Binding HasActiveAlerts, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}"/>
+                </Grid>
+            </Border>
+            
+            <!-- Alert History Panel -->
+            <Border Grid.Column="1" 
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="16"
+                    Margin="8,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" 
+                               Text="Alert History" 
+                               FontSize="18" 
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               Margin="0,0,0,12"/>
+                    
+                    <Grid Grid.Row="1" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" 
+                                 Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" 
+                                 Padding="12,8"
+                                 materialDesign:HintAssist.Hint="Filter alerts..."
+                                 Style="{StaticResource MaterialDesignTextBox}"
+                                 Background="{DynamicResource SurfaceVariantBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}"/>
+                        <Button Grid.Column="1" 
+                                Content="Clear" 
+                                Command="{Binding ClearLogCommand}" 
+                                Margin="8,0,0,0" 
+                                Padding="16,8"
+                                Style="{StaticResource MaterialDesignOutlinedButton}"/>
+                    </Grid>
+                    
+                    <ScrollViewer Grid.Row="2" 
+                                  Style="{StaticResource MaterialDesignScrollViewer}"
+                                  VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding AlertHistory}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <controls:AlertCard/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" 
+                Padding="16,12" 
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <materialDesign:PackIcon Kind="VolumeHigh" 
+                                             Width="20" Height="20"
+                                             Margin="0,0,8,0"
+                                             VerticalAlignment="Center"
+                                             Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <TextBlock Text="Audio" 
+                               VerticalAlignment="Center" 
+                               Margin="0,0,8,0"
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}"
+                                  IsChecked="{Binding IsAudioEnabled}"
+                                  VerticalAlignment="Center"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Content="Acknowledge All" 
+                            Command="{Binding AcknowledgeAllCommand}" 
+                            Padding="16,8"
+                            Style="{StaticResource MaterialDesignFlatButton}"/>
+                    <Button Content="Clear Log" 
+                            Command="{Binding ClearLogCommand}" 
+                            Margin="8,0,0,0" 
+                            Padding="16,8"
+                            Style="{StaticResource MaterialDesignOutlinedButton}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

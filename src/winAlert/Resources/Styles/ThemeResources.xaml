@@ -1,0 +1,209 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+
+    <!-- 
+        winAlert Custom Theme Resources
+        Dark theme with teal accent, designed for MaterialDesign v5.0.0
+    -->
+
+    <!-- ============================================ -->
+    <!-- BRUSHES - Backgrounds and Surfaces -->
+    <!-- ============================================ -->
+
+    <!-- Dark background colors -->
+    <SolidColorBrush x:Key="BackgroundBrush" Color="#121212" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#1E1E1E" />
+    <SolidColorBrush x:Key="SurfaceVariantBrush" Color="#2D2D2D" />
+    <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="#242424" />
+
+    <!-- Text colors -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B3B3B3" />
+    <SolidColorBrush x:Key="TextTertiaryBrush" Color="#808080" />
+    <SolidColorBrush x:Key="TextDisabledBrush" Color="#666666" />
+
+    <!-- Accent colors -->
+    <SolidColorBrush x:Key="SuccessBrush" Color="#4CAF50" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#FFC107" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="#F44336" />
+    <SolidColorBrush x:Key="InfoBrush" Color="#2196F3" />
+
+    <!-- Border colors -->
+    <SolidColorBrush x:Key="BorderBrush" Color="#3D3D3D" />
+    <SolidColorBrush x:Key="BorderLightBrush" Color="#555555" />
+
+    <!-- Divider colors -->
+    <SolidColorBrush x:Key="DividerBrush" Color="#2A2A2A" />
+
+    <!-- ============================================ -->
+    <!-- TYPOGRAPHY STYLES -->
+    <!-- ============================================ -->
+
+    <!-- Title Style - Large bold text for window titles -->
+    <Style x:Key="TitleTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Margin" Value="0,0,0,16" />
+    </Style>
+
+    <!-- Header Style - Section headers -->
+    <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
+    <!-- Alert Title Style - Bold title for alerts -->
+    <Style x:Key="AlertTitleTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- Body Text Style -->
+    <Style x:Key="BodyTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- Secondary Text Style -->
+    <Style x:Key="SecondaryTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <!-- ============================================ -->
+    <!-- CONTAINER STYLES -->
+    <!-- ============================================ -->
+
+    <!-- Base Window Style -->
+    <Style x:Key="BaseWindowStyle" TargetType="Window">
+        <Setter Property="Background" Value="{DynamicResource BackgroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="FontFamily" Value="{DynamicResource MaterialDesignFont}" />
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
+    <!-- Card Style - Rounded surface container -->
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+
+    <!-- ============================================ -->
+    <!-- BUTTON STYLES -->
+    <!-- ============================================ -->
+
+    <!-- Primary Button Style - Teal accent -->
+    <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignFlatButton}">
+        <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="materialDesign:ButtonAssist.CornerRadius" Value="4" />
+    </Style>
+
+    <!-- Secondary Button Style - Outlined -->
+    <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignOutlinedButton}">
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderLightBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="materialDesign:ButtonAssist.CornerRadius" Value="4" />
+    </Style>
+
+    <!-- ============================================ -->
+    <!-- INPUT STYLES -->
+    <!-- ============================================ -->
+
+    <!-- Base TextBox Style -->
+    <Style x:Key="BaseTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource MaterialDesignTextBox}">
+        <Setter Property="Background" Value="{DynamicResource SurfaceVariantBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource PrimaryHueMidBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="Padding" Value="12,8" />
+    </Style>
+
+    <!-- Toggle Switch Style -->
+    <Style x:Key="ToggleSwitchStyle" TargetType="ToggleButton" BasedOn="{StaticResource MaterialDesignSwitchToggleButton}">
+        <Setter Property="materialDesign:ToggleButtonAssist.SwitchTrackOnBackground" Value="{DynamicResource PrimaryHueMidBrush}" />
+        <Setter Property="materialDesign:ToggleButtonAssist.SwitchTrackOffBackground" Value="{DynamicResource SurfaceVariantBrush}" />
+    </Style>
+
+    <!-- ============================================ -->
+    <!-- SCROLLVIEWER STYLE -->
+    <!-- ============================================ -->
+
+    <Style x:Key="MaterialDesignScrollViewer" TargetType="ScrollViewer">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollViewer">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <ScrollContentPresenter Grid.Column="0" Grid.Row="0" />
+
+                        <ScrollBar x:Name="PART_VerticalScrollBar"
+                                   Grid.Column="1" Grid.Row="0"
+                                   Orientation="Vertical"
+                                   Value="{TemplateBinding VerticalOffset}"
+                                   Maximum="{TemplateBinding ScrollableHeight}"
+                                   ViewportSize="{TemplateBinding ViewportHeight}"
+                                   Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                                   Style="{DynamicResource MaterialDesignScrollBar}"
+                                   Width="8" />
+
+                        <ScrollBar x:Name="PART_HorizontalScrollBar"
+                                   Grid.Column="0" Grid.Row="1"
+                                   Orientation="Horizontal"
+                                   Value="{TemplateBinding HorizontalOffset}"
+                                   Maximum="{TemplateBinding ScrollableWidth}"
+                                   ViewportSize="{TemplateBinding ViewportWidth}"
+                                   Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"
+                                   Style="{DynamicResource MaterialDesignScrollBar}"
+                                   Height="8" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============================================ -->
+    <!-- ALERT SPECIFIC STYLES -->
+    <!-- ============================================ -->
+
+    <!-- Alert Card Container -->
+    <Style x:Key="AlertCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect Color="Black" BlurRadius="8" ShadowDepth="2" Opacity="0.2" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Severity Badge -->
+    <Style x:Key="SeverityBadgeStyle" TargetType="Border">
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="8,2" />
+    </Style>
+
+</ResourceDictionary>
