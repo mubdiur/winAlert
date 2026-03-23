@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Serilog;
 using winAlert.Domain.Events;
 using winAlert.Domain.Models;
@@ -27,6 +29,9 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     private readonly IEventAggregator _eventAggregator;
     private readonly IAlertTriageEngine _triageEngine;
     private readonly ILogger _logger;
+
+    // Tracks escalation timers for unacknowledged alerts
+    private readonly ConcurrentDictionary<Guid, DispatcherTimer> _escalationTimers = new();
 
     private bool _isListening;
     private int _port;
@@ -209,12 +214,18 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
                 {
                     _logger?.Debug("[MAINVM] Triggering audio notification");
                     Debug.WriteLine("[MAINVM] Triggering audio notification");
-                    _audioService.Play(alert.Severity, plan.AudioVolume);
+                    _audioService.Play(alert.Id, alert.Severity, plan.AudioVolume);
                 }
                 else
                 {
                     _logger?.Debug("[MAINVM] Audio notification disabled in plan");
                     Debug.WriteLine("[MAINVM] Audio notification disabled in plan");
+                }
+
+                // Start escalation timer if acknowledgment required
+                if (plan.RequireAcknowledgment)
+                {
+                    StartEscalationTimer(alert.Id, plan.AudioVolume);
                 }
 
                 if (plan.ShowOverlay && alert.Severity == AlertSeverity.Critical)
@@ -228,6 +239,9 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
                 {
                     AcknowledgeAlertInternal(alert.Id);
                 });
+
+                // Bring window to front and focus
+                BringWindowToFront();
 
                 UpdateState();
                 _logger?.Information("[MAINVM] Alert processed successfully: {AlertId}", alert.Id);
@@ -246,6 +260,15 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     {
         Application.Current?.Dispatcher.Invoke(() =>
         {
+            // Cancel escalation timer if exists
+            if (_escalationTimers.TryRemove(e.AlertId, out var timer))
+            {
+                timer.Stop();
+                _logger?.Debug("[MAINVM] Cancelled escalation timer for {AlertId}", e.AlertId);
+                Debug.WriteLine($"[MAINVM] Cancelled escalation timer for {e.AlertId}");
+            }
+
+            // Stop any audio (initial notification and siren)
             _audioService.StopForAlert(e.AlertId);
 
             var vm = ActiveAlerts.FirstOrDefault(a => a.Id == e.AlertId);
@@ -263,6 +286,26 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
 
             UpdateState();
         });
+    }
+
+    private void StartEscalationTimer(Guid alertId, float volume)
+    {
+        var timer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(5)
+        };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            _escalationTimers.TryRemove(alertId, out _);
+            _logger?.Information("[MAINVM] Alert {AlertId} not acknowledged within 5 seconds - playing siren", alertId);
+            Debug.WriteLine($"[MAINVM] Alert {alertId} not acknowledged within 5 seconds - playing siren");
+            _audioService.PlaySiren(alertId, 0.6f); // 60% volume for siren
+        };
+        _escalationTimers[alertId] = timer;
+        timer.Start();
+        _logger?.Debug("[MAINVM] Started escalation timer for {AlertId}", alertId);
+        Debug.WriteLine($"[MAINVM] Started escalation timer for {alertId}");
     }
 
     private void OnListenerStatusChanged(ListenerStatusChangedEvent e)
@@ -390,4 +433,45 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         _audioService.Dispose();
         _listenerService.Dispose();
     }
+
+    private void BringWindowToFront()
+    {
+        var window = Application.Current.MainWindow;
+        if (window == null)
+            return;
+
+        // Ensure window handle is created
+        var helper = new System.Windows.Interop.WindowInteropHelper(window);
+        var handle = helper.EnsureHandle();
+
+        // Restore and show window
+        ShowWindow(handle, SW_RESTORE);
+        ShowWindow(handle, SW_SHOW);
+
+        // Bring to front using WPF
+        window.Activate();
+        window.Topmost = true;
+        window.Topmost = false;
+        window.Focus();
+
+        // Force to front using Win32 API
+        SwitchToThisWindow(handle, true);
+        SetForegroundWindow(handle);
+    }
+
+    #region P/Invoke
+
+    private const int SW_RESTORE = 9;
+    private const int SW_SHOW = 5;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    #endregion
 }
