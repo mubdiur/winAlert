@@ -79,12 +79,12 @@ public sealed class TrayIcon : IDisposable
         {
             try
             {
-                var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                if (exePath.EndsWith(".dll"))
+                // Use AppContext.BaseDirectory for single-file app compatibility
+                var exePath = System.IO.Path.Combine(AppContext.BaseDirectory, "winAlert.exe");
+                if (System.IO.File.Exists(exePath))
                 {
-                    exePath = exePath.Replace(".dll", ".exe");
+                    icon = Icon.ExtractAssociatedIcon(exePath);
                 }
-                icon = Icon.ExtractAssociatedIcon(exePath);
             }
             catch
             {

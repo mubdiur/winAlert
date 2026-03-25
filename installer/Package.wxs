@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Package
+        Name="winAlert"
+        Version="$(var.Version)"
+        Manufacturer="$(var.Manufacturer)"
+        UpgradeCode="$(var.UpgradeCode)"
+        Scope="perUser"
+        InstallScope="perUser"
+        Compressed="yes"
+        InstallerVersion="500">
+
+        <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+        <MediaTemplate EmbedCab="yes" />
+
+        <!-- Features -->
+        <Feature Id="ProductFeature" Title="winAlert" Level="1">
+            <ComponentGroupRef Id="ProductComponents" />
+            <ComponentRef Id="ApplicationShortcut" />
+            <ComponentRef Id="ApplicationShortcutDesktop" />
+        </Feature>
+
+        <!-- Directory Structure -->
+        <StandardDirectory Id="LocalAppDataFolder">
+            <Directory Id="INSTALLFOLDER" Name="winAlert">
+                <Component Id="MainExecutable" Guid="*" SharedDllRefCount="no" KeyPath="yes">
+                    <File Id="WinAlertExe" Source="$(var.SourceDir)\winAlert.exe" />
+                </Component>
+            </Directory>
+        </StandardDirectory>
+
+        <!-- User Desktop Shortcut -->
+        <StandardDirectory Id="DesktopFolder">
+            <Component Id="ApplicationShortcutDesktop" Guid="*" SharedDllRefCount="no" KeyPath="yes">
+                <Shortcut
+                    Id="DesktopShortcut"
+                    Name="winAlert"
+                    Description="Enterprise Alert Monitor"
+                    Target="[INSTALLFOLDER]winAlert.exe"
+                    WorkingDirectory="INSTALLFOLDER" />
+                <RemoveFolder Id="RemoveDesktopFolder" On="uninstall" />
+            </Component>
+        </StandardDirectory>
+
+        <!-- User Start Menu Shortcut -->
+        <StandardDirectory Id="StartMenuFolder">
+            <Directory Id="ApplicationProgramsFolder" Name="winAlert">
+                <Component Id="ApplicationShortcut" Guid="*" SharedDllRefCount="no" KeyPath="yes">
+                    <Shortcut
+                        Id="ApplicationStartMenuShortcut"
+                        Name="winAlert"
+                        Description="Enterprise Alert Monitor"
+                        Target="[INSTALLFOLDER]winAlert.exe"
+                        WorkingDirectory="INSTALLFOLDER" />
+                    <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
+                </Component>
+            </Directory>
+        </StandardDirectory>
+
+        <!-- Components -->
+        <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+            <!-- Additional files if needed -->
+        </ComponentGroup>
+    </Package>
+</Wix>
