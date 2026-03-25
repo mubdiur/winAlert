@@ -1,13 +1,15 @@
 using System;
+using System.Drawing;
 using System.IO;
+using System.Threading;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Threading;
 using MaterialDesignColors;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Events;
+using winAlert.Notifications;
 using winAlert.Services.Core;
 using winAlert.Services.Data;
 using winAlert.Services.Network;
@@ -18,44 +20,50 @@ using winAlert.Views;
 namespace winAlert;
 
 /// <summary>
-/// Application entry point with DI configuration.
+/// Application entry point with DI configuration, single instance enforcement, and system tray support.
 /// </summary>
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
+    private const string SingleInstanceMutexName = "winAlert_SingleInstance_Mutex";
+    private static Mutex? _singleInstanceMutex;
+    
     private IServiceProvider? _serviceProvider;
     private ILogger? _logger;
+    private TrayIcon? _trayIcon;
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // ENFORCE SINGLE INSTANCE
+        if (!EnsureSingleInstance())
+        {
+            ActivateExistingInstance();
+            Shutdown(0);
+            return;
+        }
+
         base.OnStartup(e);
 
-        // Configure logging first
         ConfigureLogging();
-
-        // Configure MaterialDesign theme
         ConfigureMaterialDesignTheme();
 
         _logger?.Information("winAlert starting up...");
 
         try
         {
-            // Configure dependency injection
             var services = new ServiceCollection();
             ConfigureServices(services);
             _serviceProvider = services.BuildServiceProvider();
 
-            // Set up global exception handling
             SetupExceptionHandling();
+            InitializeSystemTray();
 
-            // Create and show main window
             var mainViewModel = _serviceProvider.GetRequiredService<MainViewModel>();
             var mainWindow = new MainWindow(mainViewModel);
+            mainWindow.Closing += OnMainWindowClosing;
             MainWindow = mainWindow;
 
-            // Handle minimize to tray
             mainWindow.StateChanged += OnMainWindowStateChanged;
 
-            // Load settings and apply behavior
             var settingsManager = _serviceProvider.GetRequiredService<ISettingsManager>();
             var settings = settingsManager.CurrentSettings;
 
@@ -75,7 +83,6 @@ public partial class App : Application
 
             mainWindow.Show();
 
-            // Start listening automatically
             if (settings.Network.Port > 0)
             {
                 var listener = _serviceProvider.GetRequiredService<IAlertListenerService>();
@@ -102,7 +109,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             _logger?.Fatal(ex, "Application startup failed");
-            MessageBox.Show($"Failed to start application: {ex.Message}", "Startup Error",
+            System.Windows.MessageBox.Show($"Failed to start application: {ex.Message}", "Startup Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
         }
@@ -112,13 +119,107 @@ public partial class App : Application
     {
         _logger?.Information("winAlert shutting down...");
 
+        if (_trayIcon != null)
+        {
+            _trayIcon.ShowWindowRequested -= ShowMainWindow;
+            _trayIcon.ExitRequested -= ExitApplication;
+            _trayIcon.Dispose();
+            _trayIcon = null;
+        }
+
         if (_serviceProvider is IDisposable disposable)
         {
             disposable.Dispose();
         }
 
+        if (_singleInstanceMutex != null)
+        {
+            _singleInstanceMutex.ReleaseMutex();
+            _singleInstanceMutex.Dispose();
+            _singleInstanceMutex = null;
+        }
+
         Log.CloseAndFlush();
         base.OnExit(e);
+    }
+
+    private static bool EnsureSingleInstance()
+    {
+        _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out bool createdNew);
+        return createdNew;
+    }
+
+    private static void ActivateExistingInstance()
+    {
+        try
+        {
+            var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+            foreach (var process in System.Diagnostics.Process.GetProcessesByName(currentProcess.ProcessName))
+            {
+                if (process.Id != currentProcess.Id && process.MainWindowHandle != IntPtr.Zero)
+                {
+                    NativeMethods.SetForegroundWindow(process.MainWindowHandle);
+                    NativeMethods.SwitchToThisWindow(process.MainWindowHandle, true);
+                    break;
+                }
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private void InitializeSystemTray()
+    {
+        _logger?.Information("Initializing system tray icon...");
+        
+        _trayIcon = new TrayIcon();
+        _trayIcon.ShowWindowRequested += ShowMainWindow;
+        _trayIcon.ExitRequested += ExitApplication;
+        _trayIcon.Initialize("winAlert - Alert Monitor");
+        
+        _logger?.Information("System tray icon initialized successfully");
+    }
+
+    private void ShowMainWindow()
+    {
+        if (MainWindow == null) return;
+
+        MainWindow.Show();
+        MainWindow.WindowState = WindowState.Normal;
+        MainWindow.Activate();
+        
+        var helper = new System.Windows.Interop.WindowInteropHelper(MainWindow);
+        NativeMethods.SetForegroundWindow(helper.Handle);
+        NativeMethods.SwitchToThisWindow(helper.Handle, true);
+    }
+
+    private void ExitApplication()
+    {
+        _logger?.Information("Exit requested from tray menu");
+        Shutdown(0);
+    }
+
+    private void OnMainWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (sender is Window window)
+        {
+            e.Cancel = true;
+            window.Hide();
+            _logger?.Debug("Main window close intercepted - minimized to tray");
+        }
+    }
+
+    private void OnMainWindowStateChanged(object? sender, EventArgs e)
+    {
+        if (MainWindow?.WindowState == WindowState.Minimized)
+        {
+            var settingsManager = _serviceProvider?.GetService<ISettingsManager>();
+            if (settingsManager?.CurrentSettings.Behavior.MinimizeToTray == true)
+            {
+                MainWindow?.Hide();
+            }
+        }
     }
 
     private void ConfigureMaterialDesignTheme()
@@ -128,21 +229,18 @@ public partial class App : Application
             var paletteHelper = new PaletteHelper();
             var theme = paletteHelper.GetTheme();
 
-            // Set base theme to Dark
             theme.SetBaseTheme(BaseTheme.Dark);
 
-            // Configure primary color (Teal) - using pre-calculated light/dark variants
-            var primaryColor = (Color)ColorConverter.ConvertFromString("#009688");
-            var primaryLight = (Color)ColorConverter.ConvertFromString("#4DB6AC");
-            var primaryDark = (Color)ColorConverter.ConvertFromString("#00796B");
+            var primaryColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#009688");
+            var primaryLight = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#4DB6AC");
+            var primaryDark = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#00796B");
             theme.PrimaryLight = new ColorPair(primaryLight, Colors.Black);
             theme.PrimaryMid = new ColorPair(primaryColor, Colors.White);
             theme.PrimaryDark = new ColorPair(primaryDark, Colors.White);
 
-            // Configure secondary color (Amber) - using pre-calculated light/dark variants
-            var secondaryColor = (Color)ColorConverter.ConvertFromString("#FFC107");
-            var secondaryLight = (Color)ColorConverter.ConvertFromString("#FFD54F");
-            var secondaryDark = (Color)ColorConverter.ConvertFromString("#FFA000");
+            var secondaryColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFC107");
+            var secondaryLight = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFD54F");
+            var secondaryDark = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFA000");
             theme.SecondaryLight = new ColorPair(secondaryLight, Colors.Black);
             theme.SecondaryMid = new ColorPair(secondaryColor, Colors.Black);
             theme.SecondaryDark = new ColorPair(secondaryDark, Colors.Black);
@@ -188,26 +286,15 @@ public partial class App : Application
 
     private void ConfigureServices(IServiceCollection services)
     {
-        // Register Serilog
         services.AddSingleton<ILogger>(Log.Logger);
-
-        // Register core services
         services.AddSingleton<IEventAggregator, EventAggregator>();
-
-        // Register data services
         services.AddSingleton<IAlertRepository, AlertRepository>();
         services.AddSingleton<ISettingsManager, SettingsManager>();
-
-        // Register network services
         services.AddSingleton<IAlertParser, AlertParser>();
         services.AddSingleton<IAlertListenerService, AlertListenerService>();
-
-        // Register notification services
         services.AddSingleton<IAlertTriageEngine, AlertTriageEngine>();
         services.AddSingleton<IAudioNotificationService, AudioNotificationService>();
         services.AddSingleton<IVisualNotificationService, VisualNotificationService>();
-
-        // Register ViewModels
         services.AddTransient<MainViewModel>();
         services.AddTransient<SettingsViewModel>();
     }
@@ -221,7 +308,7 @@ public partial class App : Application
 
             if (args.IsTerminating)
             {
-                MessageBox.Show($"A fatal error occurred: {exception?.Message}\n\nThe application will now close.",
+                System.Windows.MessageBox.Show($"A fatal error occurred: {exception?.Message}\n\nThe application will now close.",
                     "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         };
@@ -229,10 +316,8 @@ public partial class App : Application
         DispatcherUnhandledException += (_, args) =>
         {
             _logger?.Error(args.Exception, "Unhandled dispatcher exception");
-
-            MessageBox.Show($"An error occurred: {args.Exception.Message}",
+            System.Windows.MessageBox.Show($"An error occurred: {args.Exception.Message}",
                 "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-
             args.Handled = true;
         };
 
@@ -242,16 +327,13 @@ public partial class App : Application
             args.SetObserved();
         };
     }
+}
 
-    private void OnMainWindowStateChanged(object? sender, EventArgs e)
-    {
-        if (MainWindow?.WindowState == WindowState.Minimized)
-        {
-            var settingsManager = _serviceProvider?.GetService<ISettingsManager>();
-            if (settingsManager?.CurrentSettings.Behavior.MinimizeToTray == true)
-            {
-                MainWindow?.Hide();
-            }
-        }
-    }
+internal static class NativeMethods
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    public static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
 }

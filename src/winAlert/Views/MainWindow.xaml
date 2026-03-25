@@ -12,7 +12,8 @@
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BackgroundBrush}"
         TextElement.Foreground="{DynamicResource TextPrimaryBrush}"
-        FontFamily="{DynamicResource MaterialDesignFont}">
+        FontFamily="{DynamicResource MaterialDesignFont}"
+        Icon="pack://application:,,,/Resources/Icons/app.ico">
 
     <Window.Resources>
         <converters:SeverityToColorConverter x:Key="SeverityToColorConverter"/>

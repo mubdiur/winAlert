@@ -253,7 +253,7 @@ public sealed class AudioNotificationService : IAudioNotificationService
         private readonly WaveOutEvent _waveOut;
         private readonly AudioFileReader _audioFile;
         private readonly bool _loop;
-        private readonly Timer? _timer;
+        private readonly System.Threading.Timer? _timer;
         private bool _disposed;
 
         public event EventHandler? PlaybackStateChanged;
@@ -332,7 +332,7 @@ public sealed class AudioNotificationService : IAudioNotificationService
     {
         private readonly WaveOutEvent _waveOut;
         private readonly SquareWaveProvider _sirenSource;
-        private readonly Timer? _toggleTimer;
+        private readonly System.Threading.Timer? _toggleTimer;
         private bool _isBeepOn = true;
         private bool _disposed;
 

@@ -6,7 +6,7 @@ namespace winAlert.Controls;
 /// <summary>
 /// Interaction logic for StatusIndicator.xaml
 /// </summary>
-public partial class StatusIndicator : UserControl
+public partial class StatusIndicator : System.Windows.Controls.UserControl
 {
     public static readonly DependencyProperty IsListeningProperty =
         DependencyProperty.Register(

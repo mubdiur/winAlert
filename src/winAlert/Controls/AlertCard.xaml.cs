@@ -8,7 +8,7 @@ namespace winAlert.Controls;
 /// <summary>
 /// Interaction logic for AlertCard.xaml
 /// </summary>
-public partial class AlertCard : UserControl
+public partial class AlertCard : System.Windows.Controls.UserControl
 {
     public AlertCard()
     {
