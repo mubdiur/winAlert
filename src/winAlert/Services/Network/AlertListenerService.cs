@@ -243,7 +243,7 @@ public sealed class AlertListenerService : IAlertListenerService
         }
         catch (Exception ex) when (ex is IOException or SocketException)
         {
-            _logger.Debug("Client {ClientId} disconnected: {Message}", clientId, ex.Message);
+            _logger?.Debug("Client {ClientId} disconnected: {Message}", clientId, ex.Message);
         }
         catch (OperationCanceledException)
         {
@@ -251,7 +251,7 @@ public sealed class AlertListenerService : IAlertListenerService
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Error handling client {ClientId}", clientId);
+            _logger?.Error(ex, "Error handling client {ClientId}", clientId);
         }
         finally
         {

@@ -137,7 +137,7 @@ public sealed class AudioNotificationService : IAudioNotificationService
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Failed to play audio for {AlertId} {Severity}", alertId, severity);
+            _logger?.Error(ex, "Failed to play audio for {AlertId} {Severity}", alertId, severity);
             // Fall back to system beep
             try
             {
@@ -189,7 +189,7 @@ public sealed class AudioNotificationService : IAudioNotificationService
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Failed to play siren for {AlertId}", alertId);
+            _logger?.Error(ex, "Failed to play siren for {AlertId}", alertId);
         }
     }
 
