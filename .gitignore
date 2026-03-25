@@ -2,6 +2,12 @@
 bin/
 obj/
 out/
+publish/
+dist/
+
+# Certificates (generated during signing)
+*.pfx
+*.p12
 
 # IDE
 .vs/
