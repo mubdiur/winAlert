@@ -10,21 +10,14 @@ set CERT_PASSWORD=winAlert2026!
 echo.
 echo Step 1: Creating self-signed certificate...
 
-for /f "tokens=*" %%i in ('powershell -Command "New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=winAlert Developer' -CertStoreLocation Cert:\CurrentUser\My -NotAfter (Get-Date).AddYears(5).ToString('yyyy-MM-dd')" 2^>nul') do set CERT_OUTPUT=%%i
-
-echo Certificate created (check Windows certificate store)
-
-echo.
-echo Step 2: Exporting certificate to PFX...
-
 set CERT_FILE=winAlert-signing.pfx
 if exist %CERT_FILE% del %CERT_FILE%
 
-powershell -Command "Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert ^| Select-Object -First 1 ^| Export-PfxCertificate -Password (ConvertTo-SecureString -String '%CERT_PASSWORD%' -Force -AsPlainText) -FilePath '%CD%\%CERT_FILE%'"
+powershell -Command "$cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=winAlert Developer' -CertStoreLocation Cert:\CurrentUser\My -NotAfter (Get-Date).AddYears(5); $cert | Export-PfxCertificate -Password (ConvertTo-SecureString -String '%CERT_PASSWORD%' -Force -AsPlainText) -FilePath '%CD%\%CERT_FILE%'; Write-Host 'Certificate thumbprint:' $cert.Thumbprint"
 
 if %errorlevel% neq 0 (
     echo.
-    echo Error: Could not export certificate.
+    echo Error: Could not create or export certificate.
     echo Please create and export it manually:
     echo   1. Run: certlm.msc
     echo   2. Find your 'winAlert Developer' certificate
@@ -35,8 +28,10 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+echo Certificate created and exported successfully.
+
 echo.
-echo Step 3: Signing MSI...
+echo Step 2: Signing MSI...
 
 set MSI_FILE=dist\winAlert.msi
 if not exist %MSI_FILE% (
@@ -45,14 +40,21 @@ if not exist %MSI_FILE% (
     exit /b 1
 )
 
-set SIGNTOOL="C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+rem Auto-detect SignTool location (find latest Windows SDK version)
+for /f "tokens=*" %%i in ('dir /b /ad "C:\Program Files (x86)\Windows Kits\10\bin\10.0.*" 2^>nul ^| sort /r') do (
+    set SIGNTOOL="C:\Program Files (x86)\Windows Kits\10\bin\%%i\x64\signtool.exe"
+    goto :found_signtool
+)
 
+:found_signtool
 if not exist %SIGNTOOL% (
-    echo Error: SignTool not found at expected location.
-    echo Please install Windows SDK or update SignTool path.
+    echo Error: SignTool not found. Please install Windows SDK.
+    echo Run: winget install Microsoft.WindowsSDK
     pause
     exit /b 1
 )
+
+echo Using SignTool: %SIGNTOOL%
 
 %SIGNTOOL% sign /f %CERT_FILE% /p %CERT_PASSWORD% /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 %MSI_FILE%
 

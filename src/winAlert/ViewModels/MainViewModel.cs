@@ -440,38 +440,51 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         if (window == null)
             return;
 
-        // Ensure window handle is created
-        var helper = new System.Windows.Interop.WindowInteropHelper(window);
-        var handle = helper.EnsureHandle();
+        // Must run on UI thread
+        if (!Application.Current.Dispatcher.CheckAccess())
+        {
+            Application.Current.Dispatcher.Invoke(BringWindowToFront);
+            return;
+        }
 
-        // Restore and show window
-        ShowWindow(handle, SW_RESTORE);
-        ShowWindow(handle, SW_SHOW);
+        try
+        {
+            // If window is minimized or hidden, restore it first
+            if (window.WindowState == WindowState.Minimized)
+            {
+                window.WindowState = WindowState.Normal;
+            }
 
-        // Bring to front using WPF
-        window.Activate();
-        window.Topmost = true;
-        window.Topmost = false;
-        window.Focus();
+            // Show the window if hidden
+            if (!window.IsVisible)
+            {
+                window.Show();
+            }
 
-        // Force to front using Win32 API
-        SwitchToThisWindow(handle, true);
-        SetForegroundWindow(handle);
+            // Force layout update before activating
+            window.UpdateLayout();
+
+            // Bring to front
+            window.Activate();
+            window.Focus();
+
+            // Use Win32 API to ensure window comes to foreground
+            var helper = new System.Windows.Interop.WindowInteropHelper(window);
+            if (helper.Handle != IntPtr.Zero)
+            {
+                SetForegroundWindow(helper.Handle);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error(ex, "Failed to bring window to front");
+        }
     }
 
     #region P/Invoke
 
-    private const int SW_RESTORE = 9;
-    private const int SW_SHOW = 5;
-
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
     #endregion
 }

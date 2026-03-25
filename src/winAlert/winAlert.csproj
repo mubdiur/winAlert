@@ -16,14 +16,15 @@
     <Description>Network alert receiver with intelligent visual and audio notifications</Description>
     <ApplicationIcon>Resources\Icons\app.ico</ApplicationIcon>
 
-    <!-- Publish settings for self-contained single-file deployment -->
+    <!-- Publish settings for optimized self-contained single-file deployment -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRun>false</PublishReadyToRun>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
-    <DebugType>embedded</DebugType>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
   <ItemGroup>
