@@ -43,3 +43,8 @@ settings.json
 # User-specific files
 *.rsuser
 *.userprefs
+
+# Build outputs - publish/dist
+publish/
+dist/
+*.pfx
