@@ -29,7 +29,7 @@ echo.
 echo Step 2: Building MSI installer...
 if not exist "%DIST_DIR%" mkdir %DIST_DIR%
 
-wix build -o %DIST_DIR%\winAlert.msi installer\Package.wxs
+wix build -b SourceDir=%CD% -o %DIST_DIR%\winAlert.msi installer\Package.wxs 2>&1
 
 if %errorlevel% neq 0 (
     echo MSI build failed!
