@@ -1,24 +1,45 @@
-# Build outputs
+# Build outputs - .NET
 bin/
 obj/
 out/
 
+# Build outputs - Visual Studio
+[Bb]uild/
+[Ll]og/
+[Oo]ut/
+
 # IDE
 .vs/
 .vscode/
+.idea/
 *.user
 *.suo
-
-# Logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Local settings
-settings.json
+*.suo.encrypted
+*.userosscache
+*.sln.docstates
+*.rsuser
 
 # NuGet
 *.nupkg
 packages/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Local settings (app data)
+settings.json
+
+# Audio files (if added later)
+*.wav
+*.mp3
+
+# User-specific files
+*.rsuser
+*.userprefs
