@@ -2,36 +2,32 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
     <Package
         Name="winAlert"
-        Version="$(var.Version)"
-        Manufacturer="$(var.Manufacturer)"
-        UpgradeCode="$(var.UpgradeCode)"
+        Version="1.0.0"
+        Manufacturer="winAlert"
+        UpgradeCode="12345678-1234-1234-1234-123456789012"
         Scope="perUser"
-        InstallScope="perUser"
         Compressed="yes"
         InstallerVersion="500">
 
         <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
         <MediaTemplate EmbedCab="yes" />
 
-        <!-- Features -->
         <Feature Id="ProductFeature" Title="winAlert" Level="1">
-            <ComponentGroupRef Id="ProductComponents" />
+            <ComponentRef Id="MainExecutable" />
             <ComponentRef Id="ApplicationShortcut" />
             <ComponentRef Id="ApplicationShortcutDesktop" />
         </Feature>
 
-        <!-- Directory Structure -->
         <StandardDirectory Id="LocalAppDataFolder">
             <Directory Id="INSTALLFOLDER" Name="winAlert">
-                <Component Id="MainExecutable" Guid="*" SharedDllRefCount="no" KeyPath="yes">
-                    <File Id="WinAlertExe" Source="$(var.SourceDir)\winAlert.exe" />
+                <Component Id="MainExecutable" Guid="A1B2C3D4-E5F6-7890-ABCD-EF1234567890" KeyPath="yes">
+                    <File Id="WinAlertExe" Source="C:\Users\mubdiur\Documents\GitHub\winAlert\publish\winAlert.exe" />
                 </Component>
             </Directory>
         </StandardDirectory>
 
-        <!-- User Desktop Shortcut -->
         <StandardDirectory Id="DesktopFolder">
-            <Component Id="ApplicationShortcutDesktop" Guid="*" SharedDllRefCount="no" KeyPath="yes">
+            <Component Id="ApplicationShortcutDesktop" Guid="B2C3D4E5-F6A7-8901-BCDE-F23456789012" KeyPath="yes">
                 <Shortcut
                     Id="DesktopShortcut"
                     Name="winAlert"
@@ -42,10 +38,9 @@
             </Component>
         </StandardDirectory>
 
-        <!-- User Start Menu Shortcut -->
         <StandardDirectory Id="StartMenuFolder">
             <Directory Id="ApplicationProgramsFolder" Name="winAlert">
-                <Component Id="ApplicationShortcut" Guid="*" SharedDllRefCount="no" KeyPath="yes">
+                <Component Id="ApplicationShortcut" Guid="C3D4E5F6-A7B8-9012-CDEF-345678901234" KeyPath="yes">
                     <Shortcut
                         Id="ApplicationStartMenuShortcut"
                         Name="winAlert"
@@ -57,9 +52,6 @@
             </Directory>
         </StandardDirectory>
 
-        <!-- Components -->
-        <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-            <!-- Additional files if needed -->
-        </ComponentGroup>
+        <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER" />
     </Package>
 </Wix>
