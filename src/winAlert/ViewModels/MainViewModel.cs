@@ -236,10 +236,10 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
                     StartEscalationTimer(alert.Id, plan.AudioVolume);
                 }
 
-                if (plan.ShowOverlay && alert.Severity == AlertSeverity.Critical)
+                if (plan.RequireAcknowledgment)
                 {
-                    _logger?.Debug("[MAINVM] Showing critical overlay");
-                    Debug.WriteLine("[MAINVM] Showing critical overlay");
+                    _logger?.Debug("[MAINVM] Showing overlay for unacknowledged alert");
+                    Debug.WriteLine("[MAINVM] Showing overlay for unacknowledged alert");
                     ShowOverlay = true;
                 }
 
@@ -293,7 +293,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
                 ActiveAlerts.Remove(vm);
             }
 
-            if (!ActiveAlerts.Any(a => a.Severity == AlertSeverity.Critical))
+            if (!ActiveAlerts.Any(a => a.RequireAcknowledgment))
             {
                 ShowOverlay = false;
             }
