@@ -11,7 +11,7 @@ namespace winAlert.Services.Notification;
 /// <summary>
 /// Interface for visual notification display.
 /// </summary>
-public interface IVisualNotificationService
+public interface IVisualNotificationService : IDisposable
 {
     /// <summary>
     /// Shows the visual notification for an alert.
@@ -47,6 +47,7 @@ public sealed class VisualNotificationService : IVisualNotificationService
     private readonly ILogger _logger;
     private readonly Dispatcher _dispatcher;
     private readonly ConcurrentDictionary<Guid, AlertNotification> _activeNotifications = new();
+    private bool _disposed;
 
     public VisualNotificationService(ILogger logger)
     {
@@ -220,6 +221,24 @@ public sealed class VisualNotificationService : IVisualNotificationService
     private static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
 
     #endregion
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+
+        foreach (var notification in _activeNotifications.Values)
+        {
+            notification.Timer?.Stop();
+            notification.OnAcknowledge = null;
+        }
+        _activeNotifications.Clear();
+
+        GC.SuppressFinalize(this);
+    }
 
     private sealed class AlertNotification
     {

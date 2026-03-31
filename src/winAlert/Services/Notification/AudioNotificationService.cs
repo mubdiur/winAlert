@@ -66,9 +66,11 @@ public sealed class AudioNotificationService : IAudioNotificationService
 {
     private readonly ILogger _logger;
     private readonly ConcurrentDictionary<Guid, IAudioPlaybackInstance> _activePlaybacks = new();
+    private readonly ConcurrentDictionary<string, bool> _audioFileCache = new();
     private readonly string _soundsPath;
     private bool _isMuted;
     private bool _disposed;
+    private Guid? _currentAlertId;
 
     public AudioNotificationService(ILogger logger)
     {
@@ -78,6 +80,11 @@ public sealed class AudioNotificationService : IAudioNotificationService
 
     /// <inheritdoc />
     public bool IsMuted => _isMuted;
+
+    private bool AudioFileExists(string filePath)
+    {
+        return _audioFileCache.GetOrAdd(filePath, _ => File.Exists(filePath));
+    }
 
     /// <inheritdoc />
     public void Play(Guid alertId, AlertSeverity severity, float volume)
@@ -99,6 +106,8 @@ public sealed class AudioNotificationService : IAudioNotificationService
             return;
         }
 
+        StopAllAudio();
+
         var audioFile = severity.ToAudioFile();
         var filePath = Path.Combine(_soundsPath, audioFile);
 
@@ -107,11 +116,10 @@ public sealed class AudioNotificationService : IAudioNotificationService
 
         try
         {
-            if (!File.Exists(filePath))
+            if (!AudioFileExists(filePath))
             {
                 _logger?.Warning("[AUDIO] Audio file not found: {FilePath}. Falling back to beep.", filePath);
                 Debug.WriteLine($"[AUDIO] Audio file not found: {filePath}. Falling back to beep.");
-                // Fall back to system beep
                 SystemSounds.Beep.Play();
                 return;
             }
@@ -121,6 +129,7 @@ public sealed class AudioNotificationService : IAudioNotificationService
             Debug.WriteLine($"[AUDIO] Creating playback instance for {severity}. Loop: {loop}");
             
             var instance = new PlaybackInstance(alertId, filePath, volume, loop);
+            _currentAlertId = alertId;
 
             if (_activePlaybacks.TryAdd(alertId, instance))
             {
@@ -138,14 +147,12 @@ public sealed class AudioNotificationService : IAudioNotificationService
         catch (Exception ex)
         {
             _logger?.Error(ex, "Failed to play audio for {AlertId} {Severity}", alertId, severity);
-            // Fall back to system beep
             try
             {
                 SystemSounds.Beep.Play();
             }
             catch
             {
-                // Ignore
             }
         }
     }
@@ -170,9 +177,12 @@ public sealed class AudioNotificationService : IAudioNotificationService
             return;
         }
 
+        StopAllAudio();
+
         try
         {
             var instance = new SirenInstance(alertId, volume);
+            _currentAlertId = alertId;
 
             if (_activePlaybacks.TryAdd(alertId, instance))
             {
@@ -196,10 +206,16 @@ public sealed class AudioNotificationService : IAudioNotificationService
     /// <inheritdoc />
     public void Stop()
     {
-        foreach (var alertId in _activePlaybacks.Keys)
+        StopAllAudio();
+    }
+
+    private void StopAllAudio()
+    {
+        foreach (var alertId in _activePlaybacks.Keys.ToList())
         {
             StopForAlert(alertId);
         }
+        _currentAlertId = null;
     }
 
     /// <inheritdoc />
@@ -209,7 +225,11 @@ public sealed class AudioNotificationService : IAudioNotificationService
         {
             instance.Stop();
             instance.Dispose();
-            _logger.Debug("Stopped audio for alert {AlertId}", alertId);
+            _logger?.Debug("Stopped audio for alert {AlertId}", alertId);
+        }
+        if (_currentAlertId == alertId)
+        {
+            _currentAlertId = null;
         }
     }
 

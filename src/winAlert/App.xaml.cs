@@ -26,8 +26,10 @@ public partial class App : System.Windows.Application
 {
     private const string SingleInstanceMutexName = "winAlert_SingleInstance_Mutex";
     private static Mutex? _singleInstanceMutex;
+    private static bool _mutexAcquired;
     
     private IServiceProvider? _serviceProvider;
+    public static IServiceProvider? ServiceProvider { get; private set; }
     private ILogger? _logger;
     private TrayIcon? _trayIcon;
 
@@ -53,6 +55,7 @@ public partial class App : System.Windows.Application
             var services = new ServiceCollection();
             ConfigureServices(services);
             _serviceProvider = services.BuildServiceProvider();
+            ServiceProvider = _serviceProvider;
 
             SetupExceptionHandling();
             InitializeSystemTray();
@@ -79,6 +82,10 @@ public partial class App : System.Windows.Application
                 {
                     mainWindow.Hide();
                 }
+            }
+            else
+            {
+                mainWindow.WindowState = WindowState.Normal;
             }
 
             mainWindow.Show();
@@ -134,7 +141,10 @@ public partial class App : System.Windows.Application
 
         if (_singleInstanceMutex != null)
         {
-            _singleInstanceMutex.ReleaseMutex();
+            if (_mutexAcquired)
+            {
+                _singleInstanceMutex.ReleaseMutex();
+            }
             _singleInstanceMutex.Dispose();
             _singleInstanceMutex = null;
         }
@@ -146,6 +156,7 @@ public partial class App : System.Windows.Application
     private static bool EnsureSingleInstance()
     {
         _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out bool createdNew);
+        _mutexAcquired = createdNew;
         return createdNew;
     }
 

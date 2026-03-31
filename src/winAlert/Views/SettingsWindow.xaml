@@ -148,6 +148,25 @@
                                           Style="{StaticResource MaterialDesignSwitchToggleButton}"
                                           IsChecked="{Binding FlashTaskbar}"/>
                         </Grid>
+
+                        <TextBlock Text="Seconds Before Alarm"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,16,0,4"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Slider Value="{Binding SirenDelaySeconds}"
+                                    Minimum="5"
+                                    Maximum="120"
+                                    TickFrequency="5"
+                                    IsSnapToTickEnabled="True"
+                                    Width="200"
+                                    VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SirenDelaySeconds, StringFormat='{}{0} sec'}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       FontSize="13"
+                                       VerticalAlignment="Center"
+                                       Margin="12,0,0,0"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

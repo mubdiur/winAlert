@@ -110,6 +110,7 @@ public class NotificationSettings
     public bool ShowOverlayForCritical { get; set; } = true;
     public bool ShowOverlayForHigh { get; set; } = false;
     public bool FlashTaskbar { get; set; } = true;
+    public int SirenDelaySeconds { get; set; } = 20;
 }
 
 /// <summary>

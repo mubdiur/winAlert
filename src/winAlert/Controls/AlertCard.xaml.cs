@@ -13,8 +13,18 @@ public partial class AlertCard : System.Windows.Controls.UserControl
     public AlertCard()
     {
         InitializeComponent();
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
 
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
         MouseLeftButtonUp += OnMouseLeftButtonUp;
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        MouseLeftButtonUp -= OnMouseLeftButtonUp;
     }
 
     private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)

@@ -8,11 +8,20 @@ namespace winAlert.Views;
 /// </summary>
 public partial class SettingsWindow : Window
 {
+    private readonly SettingsViewModel _viewModel;
+
     public SettingsWindow(SettingsViewModel viewModel)
     {
         InitializeComponent();
         DataContext = viewModel;
+        _viewModel = viewModel;
 
-        viewModel.RequestClose += () => Close();
+        _viewModel.RequestClose += OnRequestClose;
+    }
+
+    private void OnRequestClose()
+    {
+        _viewModel.RequestClose -= OnRequestClose;
+        Close();
     }
 }

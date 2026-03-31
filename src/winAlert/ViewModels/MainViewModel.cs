@@ -39,7 +39,8 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     private bool _isAudioEnabled;
     private bool _hasActiveAlerts;
     private bool _showOverlay;
-    private string _statusText = "Ready";
+    private bool _isTopmost;
+    private string _statusText = string.Empty;
     private string _filterText = string.Empty;
     private AlertCardViewModel? _selectedAlert;
 
@@ -136,7 +137,19 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     public bool ShowOverlay
     {
         get => _showOverlay;
-        set => SetProperty(ref _showOverlay, value);
+        set
+        {
+            if (SetProperty(ref _showOverlay, value))
+            {
+                IsTopmost = value;
+            }
+        }
+    }
+
+    public bool IsTopmost
+    {
+        get => _isTopmost;
+        private set => SetProperty(ref _isTopmost, value);
     }
 
     public string StatusText
@@ -178,10 +191,12 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     public ICommand MinimizeToTrayCommand { get; }
     public ICommand ExitCommand { get; }
 
+    public event System.Action? OpenSettingsRequested;
+
     // Event handlers
     private void OnAlertReceived(AlertReceivedEvent e)
     {
-        Application.Current?.Dispatcher.Invoke(() =>
+        Application.Current?.Dispatcher.BeginInvoke(() =>
         {
             try
             {
@@ -191,25 +206,19 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
                 _logger?.Information("[MAINVM] Processing alert: {AlertId} - {Title}", alert.Id, alert.Title);
                 Debug.WriteLine($"[MAINVM] Processing alert: {alert.Id} - {alert.Title}");
 
-                // Add to repository
                 _alertRepository.Add(alert);
 
-                // Create ViewModel
                 var vm = new AlertCardViewModel(alert);
 
-                // Add to active alerts
-                var insertIndex = ActiveAlerts.ToList().FindIndex(a => a.Severity < alert.Severity);
-                if (insertIndex < 0) insertIndex = ActiveAlerts.Count;
+                var insertIndex = FindInsertIndex(alert.Severity);
                 ActiveAlerts.Insert(insertIndex, vm);
                 _logger?.Debug("[MAINVM] Added to ActiveAlerts at index {Index}. Count: {Count}", insertIndex, ActiveAlerts.Count);
                 Debug.WriteLine($"[MAINVM] Added to ActiveAlerts at index {insertIndex}. Count: {ActiveAlerts.Count}");
 
-                // Add to history
                 AlertHistory.Insert(0, vm);
                 _logger?.Debug("[MAINVM] Added to AlertHistory. Count: {Count}", AlertHistory.Count);
                 Debug.WriteLine($"[MAINVM] Added to AlertHistory. Count: {AlertHistory.Count}");
 
-                // Trigger notifications
                 if (plan.PlayAudio)
                 {
                     _logger?.Debug("[MAINVM] Triggering audio notification");
@@ -222,7 +231,6 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
                     Debug.WriteLine("[MAINVM] Audio notification disabled in plan");
                 }
 
-                // Start escalation timer if acknowledgment required
                 if (plan.RequireAcknowledgment)
                 {
                     StartEscalationTimer(alert.Id, plan.AudioVolume);
@@ -240,7 +248,6 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
                     AcknowledgeAlertInternal(alert.Id);
                 });
 
-                // Bring window to front and focus
                 BringWindowToFront();
 
                 UpdateState();
@@ -256,11 +263,20 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         });
     }
 
+    private int FindInsertIndex(AlertSeverity severity)
+    {
+        for (int i = 0; i < ActiveAlerts.Count; i++)
+        {
+            if (ActiveAlerts[i].Severity < severity)
+                return i;
+        }
+        return ActiveAlerts.Count;
+    }
+
     private void OnAlertAcknowledged(AlertAcknowledgedEvent e)
     {
-        Application.Current?.Dispatcher.Invoke(() =>
+        Application.Current?.Dispatcher.BeginInvoke(() =>
         {
-            // Cancel escalation timer if exists
             if (_escalationTimers.TryRemove(e.AlertId, out var timer))
             {
                 timer.Stop();
@@ -268,7 +284,6 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
                 Debug.WriteLine($"[MAINVM] Cancelled escalation timer for {e.AlertId}");
             }
 
-            // Stop any audio (initial notification and siren)
             _audioService.StopForAlert(e.AlertId);
 
             var vm = ActiveAlerts.FirstOrDefault(a => a.Id == e.AlertId);
@@ -278,7 +293,6 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
                 ActiveAlerts.Remove(vm);
             }
 
-            // Check if we should hide overlay
             if (!ActiveAlerts.Any(a => a.Severity == AlertSeverity.Critical))
             {
                 ShowOverlay = false;
@@ -290,17 +304,18 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
 
     private void StartEscalationTimer(Guid alertId, float volume)
     {
+        var sirenDelaySeconds = _settingsManager.CurrentSettings.Notifications.SirenDelaySeconds;
         var timer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromSeconds(5)
+            Interval = TimeSpan.FromSeconds(sirenDelaySeconds)
         };
         timer.Tick += (_, _) =>
         {
             timer.Stop();
             _escalationTimers.TryRemove(alertId, out _);
-            _logger?.Information("[MAINVM] Alert {AlertId} not acknowledged within 5 seconds - playing siren", alertId);
-            Debug.WriteLine($"[MAINVM] Alert {alertId} not acknowledged within 5 seconds - playing siren");
-            _audioService.PlaySiren(alertId, 0.6f); // 60% volume for siren
+            _logger?.Information("[MAINVM] Alert {AlertId} not acknowledged within {Seconds} seconds - playing siren", alertId, sirenDelaySeconds);
+            Debug.WriteLine($"[MAINVM] Alert {alertId} not acknowledged within {sirenDelaySeconds} seconds - playing siren");
+            _audioService.PlaySiren(alertId, 0.6f);
         };
         _escalationTimers[alertId] = timer;
         timer.Start();
@@ -310,7 +325,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
 
     private void OnListenerStatusChanged(ListenerStatusChangedEvent e)
     {
-        Application.Current?.Dispatcher.Invoke(() =>
+        Application.Current?.Dispatcher.BeginInvoke(() =>
         {
             IsListening = e.IsListening;
             ConnectionCount = e.ConnectionCount;
@@ -397,7 +412,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
 
     private void OpenSettings()
     {
-        // Settings window is opened by the View
+        OpenSettingsRequested?.Invoke();
     }
 
     private void MinimizeToTray()
@@ -430,6 +445,12 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        foreach (var timer in _escalationTimers.Values)
+        {
+            timer.Stop();
+        }
+        _escalationTimers.Clear();
+
         _audioService.Dispose();
         _listenerService.Dispose();
     }

@@ -17,6 +17,7 @@ public sealed class SettingsViewModel : ViewModelBase
     private float _masterVolume;
     private bool _showOverlayForCritical;
     private bool _flashTaskbar;
+    private int _sirenDelaySeconds;
     private bool _minimizeToTray;
     private bool _startMinimized;
     private bool _alwaysOnTop;
@@ -32,6 +33,7 @@ public sealed class SettingsViewModel : ViewModelBase
         _masterVolume = _settings.Audio.MasterVolume;
         _showOverlayForCritical = _settings.Notifications.ShowOverlayForCritical;
         _flashTaskbar = _settings.Notifications.FlashTaskbar;
+        _sirenDelaySeconds = _settings.Notifications.SirenDelaySeconds;
         _minimizeToTray = _settings.Behavior.MinimizeToTray;
         _startMinimized = _settings.Behavior.StartMinimized;
         _alwaysOnTop = _settings.Behavior.AlwaysOnTop;
@@ -72,6 +74,12 @@ public sealed class SettingsViewModel : ViewModelBase
         set => SetProperty(ref _flashTaskbar, value);
     }
 
+    public int SirenDelaySeconds
+    {
+        get => _sirenDelaySeconds;
+        set => SetProperty(ref _sirenDelaySeconds, value);
+    }
+
     public bool MinimizeToTray
     {
         get => _minimizeToTray;
@@ -107,6 +115,7 @@ public sealed class SettingsViewModel : ViewModelBase
         _settings.Audio.MasterVolume = MasterVolume;
         _settings.Notifications.ShowOverlayForCritical = ShowOverlayForCritical;
         _settings.Notifications.FlashTaskbar = FlashTaskbar;
+        _settings.Notifications.SirenDelaySeconds = SirenDelaySeconds;
         _settings.Behavior.MinimizeToTray = MinimizeToTray;
         _settings.Behavior.StartMinimized = StartMinimized;
         _settings.Behavior.AlwaysOnTop = AlwaysOnTop;
@@ -131,6 +140,7 @@ public sealed class SettingsViewModel : ViewModelBase
         MasterVolume = reset.Audio.MasterVolume;
         ShowOverlayForCritical = reset.Notifications.ShowOverlayForCritical;
         FlashTaskbar = reset.Notifications.FlashTaskbar;
+        SirenDelaySeconds = reset.Notifications.SirenDelaySeconds;
         MinimizeToTray = reset.Behavior.MinimizeToTray;
         StartMinimized = reset.Behavior.StartMinimized;
         AlwaysOnTop = reset.Behavior.AlwaysOnTop;
