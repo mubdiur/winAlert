@@ -49,8 +49,6 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        _viewModel.OpenSettingsRequested -= OnOpenSettingsRequested;
-        _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
         base.OnClosing(e);
     }
 }
